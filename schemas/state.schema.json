@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/MatheusEduGarcia/oee-monitor-lab/schemas/state.schema.json",
   "title": "State",
-  "description": "Whether the machine is running. Published on change and retained, so a late subscriber knows the current state.",
+  "description": "Whether the machine is running and, when it is not, why. Published on change and retained, so a late subscriber knows the current state.",
   "type": "object",
   "properties": {
     "v": {
@@ -33,6 +33,22 @@
     },
     "running": {
       "type": "boolean"
+    },
+    "category": {
+      "enum": [
+        "closed",
+        "unscheduled",
+        "planned",
+        "failure",
+        "unplanned"
+      ],
+      "description": "Only when running is false. closed: plant shut, no demand. unscheduled: no shift programmed. planned: meal, changeover, preventive maintenance. failure: the machine broke. unplanned: any other unplanned stop (no material, no operator)."
+    },
+    "reason": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 40,
+      "description": "Slug naming the stop or failure mode, e.g. meal, changeover, jam, seal-wear. Optional; set by the operator panel or the PLC."
     }
   },
   "required": [
@@ -42,5 +58,28 @@
     "value",
     "running"
   ],
-  "additionalProperties": true
+  "additionalProperties": true,
+  "if": {
+    "properties": {
+      "running": {
+        "const": true
+      }
+    }
+  },
+  "then": {
+    "not": {
+      "anyOf": [
+        {
+          "required": [
+            "category"
+          ]
+        },
+        {
+          "required": [
+            "reason"
+          ]
+        }
+      ]
+    }
+  }
 }

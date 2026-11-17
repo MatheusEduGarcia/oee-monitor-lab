@@ -39,6 +39,7 @@ class Node:
         self.total = {"output-good": 0, "output-defect": 0}
         self.unsent = {"output-good": 0, "output-defect": 0}
         self.running = False
+        self.why: tuple[str | None, str | None] = (None, None)
         self.link_up = True
         self.sent: list[tuple[str, dict]] = []
         # wire(topic, payload_bytes, retain): deliver without a broker, for fast deterministic runs
@@ -87,9 +88,11 @@ class Node:
         self._event("stop", now)
         self.set_running(False, now)
 
-    def set_running(self, running: bool, now: datetime):
-        if running != self.running:
+    def set_running(self, running: bool, now: datetime, category: str | None = None, reason: str | None = None):
+        """Change the running level. A stop may carry why (contract v1, optional fields)."""
+        if running != self.running or (not running and (category, reason) != self.why):
             self.running = running
+            self.why = (None, None) if running else (category, reason)
             self._state(now)
 
     def piece(self, now: datetime, good: bool = True, n: int = 1):
@@ -128,7 +131,10 @@ class Node:
         self._publish(signal, self._envelope(now, value=n, total=self.total[signal]))
 
     def _state(self, now: datetime):
-        self._publish("state", self._envelope(now, value=int(self.running), running=self.running))
+        extra = {}
+        if self.dialect == "v1" and not self.running:
+            extra = {k: v for k, v in zip(("category", "reason"), self.why) if v}
+        self._publish("state", self._envelope(now, value=int(self.running), running=self.running, **extra))
 
     def _birth(self, now: datetime):
         if self.dialect == "v0":

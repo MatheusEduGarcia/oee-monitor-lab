@@ -167,8 +167,64 @@ def oee(path: Path | None = None):
     return fig
 
 
+def waterfall(path: Path | None = None, name: str = "press-02"):
+    """From calendar time to valuable time for one machine, with each indicator at its step."""
+    from .weeklab import run_week
+    t = run_week()[0][name]
+    s, h = t.seconds, 3600
+    perf_loss = s["run"] - (t.good + t.defect) * t.ideal_cycle_s
+    qual_loss = t.defect * t.ideal_cycle_s
+    steps = [("calendar", t.calendar, None), ("plant closed", -s["closed"], GREY), ("no shift", -s["unscheduled"], GREY),
+             ("planned stops", -s["planned"], ORANGE), ("failures", -s["failure"], RED), ("other unplanned", -s["unplanned"], RED),
+             ("speed loss", -perf_loss, BLUE), ("defects", -qual_loss, BLUE), ("valuable", t.valuable, None)]
+    marks = {"calendar": "TEEP", "plant closed": "OAE", "no shift": "OOE", "planned stops": "OEE"}
+    fig, ax = plt.subplots(figsize=(10, 4))
+    level = 0.0
+    for i, (label, v, col) in enumerate(steps):
+        if col is None:
+            ax.bar(i, v / h, color="#2c3e50"); level = v
+            ax.text(i, v / h + 2, f"{v / h:.0f} h", ha="center", fontsize=8)
+        else:
+            ax.bar(i, -v / h, bottom=(level + v) / h, color=col); level += v
+            ax.text(i, level / h - 2, f"{v / h:.1f}", ha="center", va="top", fontsize=8, color=col)
+        if label in marks:
+            k = marks[label]
+            base = t.base(k)
+            ax.annotate(f"{k} base {base / h:.0f} h\n{k} = {t.indicator(k):.0%}", (i + 0.5, base / h), fontsize=8,
+                        xytext=(0, 12), textcoords="offset points", ha="center", color="#2c3e50",
+                        arrowprops=dict(arrowstyle="-", color="#999999"))
+    ax.set_xticks(range(len(steps)), [x[0] for x in steps], rotation=20, fontsize=8)
+    ax.set_ylabel("hours in the week"); ax.set_ylim(0, t.calendar / h * 1.25)
+    ax.set_title(f"{name}: where the 168 hours of the week went")
+    ax.spines[["top", "right"]].set_visible(False); fig.tight_layout()
+    if path:
+        fig.savefig(path, dpi=130)
+    return fig
+
+
+def family(path: Path | None = None):
+    """TEEP, OAE, OOE and OEE side by side for every machine."""
+    from .weeklab import run_week
+    measured = run_week()[0]
+    keys = [("TEEP", GREY), ("OAE", "#95a5a6"), ("OOE", ORANGE), ("OEE", GREEN)]
+    fig, ax = plt.subplots(figsize=(7.5, 3.4))
+    for j, (k, col) in enumerate(keys):
+        xs = [i + (j - 1.5) * 0.2 for i in range(len(measured))]
+        vals = [100 * m.indicator(k) for m in measured.values()]
+        ax.bar(xs, vals, 0.2, color=col, label=k)
+        for x, v in zip(xs, vals):
+            ax.text(x, v + 1, f"{v:.0f}", ha="center", fontsize=8)
+    ax.set_xticks(range(len(measured)), list(measured)); ax.set_ylim(0, 100); ax.set_ylabel("%")
+    ax.set_title("Same pieces, same week, four reference times")
+    ax.legend(frameon=False, fontsize=8, ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.12))
+    ax.spines[["top", "right"]].set_visible(False); fig.tight_layout()
+    if path:
+        fig.savefig(path, dpi=130)
+    return fig
+
+
 if __name__ == "__main__":
     for name, dot in (("architecture", ARCHITECTURE), ("wiring", WIRING), ("lifecycle", LIFECYCLE), ("topics", TOPICS)):
         print(render(dot, name))
-    for name, fn in (("fast_pieces", fast_pieces), ("outage", outage), ("oee", oee)):
+    for name, fn in (("fast_pieces", fast_pieces), ("outage", outage), ("oee", oee), ("waterfall", waterfall), ("family", family)):
         fn(IMG / f"{name}.png"); print(IMG / f"{name}.png")

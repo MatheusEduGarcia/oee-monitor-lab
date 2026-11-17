@@ -6,7 +6,7 @@ A collection node (ESP32) reads start, stop, piece and running signals from a ma
 
 ![Architecture](docs/img/architecture.png)
 
-**Contents:** [The finding](#the-finding-that-started-it) · [Contract v1](#the-fix-contract-v1) · [Hardware](#the-hardware) · [Run it](#run-it) · [Dashboard](#the-system-it-feeds) · [Notebooks](#study-notebooks-portuguese-executed) · [Limits](#honest-limits)
+**Contents:** [The finding](#the-finding-that-started-it) · [Contract v1](#the-fix-contract-v1) · [Hardware](#the-hardware) · [Beyond OEE](#beyond-oee-mtbf-mttr-teep-oae-ooe-ope-ofe) · [Run it](#run-it) · [Dashboard](#the-system-it-feeds) · [Notebooks](#study-notebooks-portuguese-executed) · [Limits](#honest-limits)
 
 | What | Where | Status |
 |---|---|---|
@@ -58,11 +58,29 @@ One ESP32 per machine, up to five signals: start, stop, good piece, reject, runn
 |---|---|
 | ![Wiring](docs/img/wiring.png) | ![Lifecycle](docs/img/lifecycle.png) |
 
+## Beyond OEE: MTBF, MTTR, TEEP, OAE, OOE, OPE, OFE
+
+Add **why** a machine stopped to the `state` message (`category` and `reason`, optional fields of v1) and the same data gives the whole family. A simulated week (three shifts on line 1, two on line 2, Sunday closed, meals, changeovers, a preventive, failures with modes) goes through the collector, and every indicator is checked against the truth of the script in CI.
+
+![Family](docs/img/family.png)
+
+The press has the **highest OEE and the lowest TEEP**: it is used well when it runs, and it has no shift most of the week. OEE is for the shift supervisor; TEEP is for the investment decision. The waterfall shows where its 168 hours went, with each indicator at the step it measures:
+
+![Waterfall](docs/img/waterfall.png)
+
+| | MTBF | MTTR | without stop category |
+|---|---|---|---|
+| filler-01 | 5.7 h | 19 min | "a stop every 2.3 h" |
+| capper-01 | 6.4 h | 22 min | "a stop every 2.7 h" |
+| press-02 | 22.9 h | 38 min | "a stop every 3.4 h" |
+
+Without the category, meals and changeovers count as failures and the machine looks two to seven times less reliable than it is. Formulas, the time model and the honest note that OAE, OPE and OFE have no single definition: [docs/indicators.md](docs/indicators.md).
+
 ## Run it
 
 ```bash
 pip install -r requirements.txt
-pytest                              # 30 tests; the broker test is skipped without one
+pytest                              # 34 tests; the broker test is skipped without one
 mosquitto -p 1883 -d                # or any broker on localhost
 python -m oeelab.demo               # 3 virtual nodes replay a shift, the collector checks it against the truth
 python -m oeelab.check_node oee/uns/packaging/line-1/cell-a/filler-01   # bench check for a real board
@@ -94,6 +112,7 @@ The same shift, published in contract v1 into the OEE dashboard this collection 
 | 01 | [O nó de coleta](notebooks/01_o_no_de_coleta.ipynb) | what the node reads, how it is wired, the three firmware dialects, last will |
 | 02 | [O contrato v1](notebooks/02_contrato_v1.ipynb) | four experiments where v0 loses pieces, and the field that fixes each |
 | 03 | [Do evento ao OEE](notebooks/03_do_evento_ao_oee.ipynb) | a full shift into OEE checked against the truth, and migrating with no reflash |
+| 04 | [Além do OEE](notebooks/04_alem_do_oee.ipynb) | MTBF and MTTR by failure mode, TEEP, OAE, OOE, OEE on one waterfall, OPE and OFE |
 
 Each has a "stop and predict" before every experiment, common mistakes, a quiz and exercises.
 
@@ -110,6 +129,9 @@ oeelab/node.py              virtual node, v0 and v1 dialects
 oeelab/collector.py         reference collector: dedup by seq, gaps, recovery from total, dead letters
 oeelab/adapter.py           v0 to v1 at the edge, no reflashing
 oeelab/oee.py               OEE from states and counters
+oeelab/kpi.py               MTBF, MTTR, TEEP, OAE, OOE, OPE, OFE
+oeelab/week.py              simulated week with calendar, planned stops and failure modes
+docs/indicators.md          time model and the definitions used
 ```
 
 ## Honest limits

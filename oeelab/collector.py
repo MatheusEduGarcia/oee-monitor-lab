@@ -24,7 +24,7 @@ from .contract import parse_topic, parse_ts, schema_for, validate
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS pieces(machine TEXT, signal TEXT, ts TEXT, n INTEGER, recovered INTEGER);
-CREATE TABLE IF NOT EXISTS states(machine TEXT, ts TEXT, running INTEGER);
+CREATE TABLE IF NOT EXISTS states(machine TEXT, ts TEXT, running INTEGER, category TEXT, reason TEXT);
 CREATE TABLE IF NOT EXISTS events(machine TEXT, signal TEXT, ts TEXT);
 CREATE TABLE IF NOT EXISTS gaps(machine TEXT, ts TEXT, missing INTEGER);
 CREATE TABLE IF NOT EXISTS dlq(topic TEXT, payload TEXT, reason TEXT, ts TEXT);
@@ -100,7 +100,7 @@ class Collector:
             else:
                 done = "counted 0"
         elif kind == "state":
-            self.db.execute("INSERT INTO states VALUES(?,?,?)", (key, ts, int(p["running"])))
+            self.db.execute("INSERT INTO states VALUES(?,?,?,?,?)", (key, ts, int(p["running"]), p.get("category"), p.get("reason")))
         else:
             self.db.execute("INSERT INTO events VALUES(?,?,?)", (key, signal, ts))
         self.db.commit()
@@ -109,7 +109,7 @@ class Collector:
     def _retained(self, key, node, kind, signal, p, ts) -> str:
         """A retained message is a level, not an event: it has no place in the seq order."""
         if kind == "state":
-            self.db.execute("INSERT INTO states VALUES(?,?,?)", (key, ts, int(p["running"])))
+            self.db.execute("INSERT INTO states VALUES(?,?,?,?,?)", (key, ts, int(p["running"]), p.get("category"), p.get("reason")))
             self.db.commit()
             return "stored"
         if kind != "counter":

@@ -40,6 +40,21 @@ oee/uns/packaging/line-1/cell-a/filler-01/output-good
 | `relay/{n}/set` | [command](../schemas/command.schema.json) | no | broker to node | Switch output n (1 to 8) |
 | `relay/{n}` | [command](../schemas/command.schema.json) | yes | node to broker | Output n really changed, echoing the command `id` |
 
+### 2.1 Why a machine stopped
+
+`state` with `running: false` may carry two optional fields. They are what turns a stop into an indicator: without them there is only "stopped"; with them there is MTBF, MTTR, OOE and TEEP ([indicators.md](indicators.md)).
+
+| Field | Values |
+|---|---|
+| `category` | `closed`, `unscheduled`, `planned`, `failure`, `unplanned` |
+| `reason` | a slug: `meal`, `changeover`, `preventive`, `jam`, `seal-wear`, `no-material`... |
+
+A change of reason while stopped (the operator classifies the stop after it began) is a new `state` message. A running `state` carries neither field. Adding them did not change `v`: a v1 receiver that ignores them keeps working (section 7).
+
+```json
+{"v":1,"seq":88,"boot":"a1b2c3","ts":"2026-11-11T13:02:10.400Z","value":0,"running":false,"category":"failure","reason":"seal-wear"}
+```
+
 ## 3. Payloads
 
 Every message from the node is a JSON object with the same envelope:
