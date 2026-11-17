@@ -6,6 +6,15 @@ A collection node (ESP32) reads start, stop, piece and running signals from a ma
 
 ![Architecture](docs/img/architecture.png)
 
+**Contents:** [The finding](#the-finding-that-started-it) · [Contract v1](#the-fix-contract-v1) · [Hardware](#the-hardware) · [Run it](#run-it) · [Dashboard](#the-system-it-feeds) · [Notebooks](#study-notebooks-portuguese-executed) · [Limits](#honest-limits)
+
+| What | Where | Status |
+|---|---|---|
+| Protocol contract, JSON Schemas | `docs/`, `schemas/` | written and tested |
+| ESP32 firmware (3 sketches) | `firmware/` | in use today (v0) |
+| Virtual node, collector, adapter | `oeelab/` | 30 tests, CI |
+| Study notebooks | `notebooks/` | executed, Portuguese |
+
 ## The finding that started it
 
 Three situations from the shop floor, reproduced against a production OEE backend before a line of this repository was written:
@@ -37,6 +46,18 @@ With v1 the same three situations count 30 of 30, 8 of 8 and every piece of the 
 
 ![Outage](docs/img/outage.png)
 
+### Topic tree
+
+![Topics](docs/img/topics.png)
+
+## The hardware
+
+One ESP32 per machine, up to five signals: start, stop, good piece, reject, running. Field signals at 24 V go through an opto-isolated stage, never straight to a 3.3 V pin. Details, a Modbus RTU variant for machines with no spare contact, and the setup portal in [docs/hardware.md](docs/hardware.md).
+
+| Wiring | Node lifecycle |
+|---|---|
+| ![Wiring](docs/img/wiring.png) | ![Lifecycle](docs/img/lifecycle.png) |
+
 ## Run it
 
 ```bash
@@ -54,11 +75,17 @@ capper-01    10968/10968    350/350    92.2%  85.2%  96.9%  76.2%  ok
 press-02      3435/3435     108/108    86.6%  85.2%  97.0%  71.6%  ok
 ```
 
+![OEE per machine](docs/img/oee.png)
+
 ## The system it feeds
 
 The same shift, published in contract v1 into the OEE dashboard this collection hardware was built for (Flask, PostgreSQL, InfluxDB, MQTT; not part of this repository):
 
 ![Dashboard](docs/img/dashboard_multi.png)
+
+| Reports | Telemetry |
+|---|---|
+| ![Reports](docs/img/dashboard_reports.png) | ![Telemetry](docs/img/dashboard_telemetria.png) |
 
 ## Study notebooks (Portuguese, executed)
 
