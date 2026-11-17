@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/MatheusEduGarcia/oee-monitor-lab/schemas/command.schema.json",
+  "title": "Relay command and acknowledgement",
+  "description": "Sent to `relay/{n}/set`. The node answers on `relay/{n}` (retained) echoing `id`, which is how the sender knows the output really changed.",
+  "type": "object",
+  "properties": {
+    "v": {
+      "const": 1,
+      "description": "Contract major version."
+    },
+    "value": {
+      "enum": [
+        0,
+        1
+      ]
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "description": "Chosen by the sender, echoed in the acknowledgement."
+    }
+  },
+  "required": [
+    "v",
+    "value",
+    "id"
+  ],
+  "additionalProperties": true
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/MatheusEduGarcia/oee-monitor-lab/schemas/event.schema.json",
+  "title": "Event (start, stop)",
+  "description": "An edge on a digital input that means something to the process. Not retained.",
+  "type": "object",
+  "properties": {
+    "v": {
+      "const": 1,
+      "description": "Contract major version."
+    },
+    "ts": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,6})?Z$",
+      "description": "UTC time of the event at the node, RFC 3339 with Z. Omitted while the node clock is not synchronised."
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295,
+      "description": "Per-node message counter, +1 on every message published, restarts at 0 on boot."
+    },
+    "boot": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{4,16}$",
+      "description": "Random id drawn at power-up. A new value means counters and seq restarted."
+    },
+    "value": {
+      "enum": [
+        0,
+        1
+      ],
+      "description": "1 on the active edge, 0 on release."
+    }
+  },
+  "required": [
+    "v",
+    "seq",
+    "boot",
+    "value"
+  ],
+  "additionalProperties": true
+}

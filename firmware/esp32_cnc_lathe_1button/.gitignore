@@ -1,0 +1,4 @@
+# Nunca versione config.h — contém credenciais WiFi e senha do broker
+config.h
+
+# Use config.example.h como template sem credenciais reais
